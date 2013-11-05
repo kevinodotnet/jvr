@@ -1,0 +1,28 @@
+# Change these if necessary
+DIALOGIC_HOME = c:\Program Files\Dialogic
+JAVA_HOME = /c/j2sdk1.4.2_01
+
+# Import standard stuff
+# include Makefile.common
+
+# C, FLAGS, INCLUDE and LIBRARY definitions
+C++ = g++
+CFLAGS = -w 
+DG_INC = "-I${DIALOGIC_HOME}\inc"
+DG_LIB = "-L${DIALOGIC_HOME}\lib" -ldxxmt -lsrlmt -lmsir4 -ldtimt -lgc
+JAVAH = ${JAVA_HOME}/bin/javah
+JAVA_INC = -I${JAVA_HOME}/include -I${JAVA_HOME}/include/win32
+
+# Development Deployment
+devrel: dx_open_test.exe wtcallid_test.exe
+
+# Programs
+dx_open_test.exe: dx_open_test.cpp
+	$(CC) ${CFLAGS} ${DG_INC} $< ${DG_LIB} ${OBJS} -o $@
+	cp dx_open_test.exe ..\..\bin
+wtcallid_test.exe: wtcallid_test.cpp
+	$(CC) ${CFLAGS} ${DG_INC} $< ${DG_LIB} ${OBJS} -o $@
+
+clean:
+	@-rm *.exe 2>/dev/null
+

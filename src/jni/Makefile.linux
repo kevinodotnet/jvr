@@ -1,0 +1,32 @@
+# Change these if necessary
+DIALOGIC_HOME = /usr/dialogic
+# JAVA_HOME is now passed in from ANT automatically.
+# JAVA_HOME = /usr/local/java
+
+# Import standard stuff
+include Makefile.common
+
+# C, FLAGS, INCLUDE and LIBRARY definitions
+C++ = g++
+CFLAGS = -DLINUX
+LDFLAGS = -lLiS -ldl -lpthread
+DG_INC= -I${DIALOGIC_HOME}/inc -I${DIALOGIC_HOME}/sctools
+DG_LIB= -L${DIALOGIC_HOME}/lib -lgc -lec -ldxxx -lsrl
+JAVAH = ${JAVA_HOME}/bin/javah
+JAVA_INC = -I${JAVA_HOME}/include -I${JAVA_HOME}/include/linux
+
+# Default
+default: ${JNI_HEADERS} libjvr.so
+
+# For development, release the shared library to the lib directory
+devrel: ${JNI_HEADERS} libjvr.so
+	cp libjvr.so ../../lib
+
+# Shared library
+libjvr.so: jnifields.o dx.o dt.o ms.o sr.o jvr.o gc.o ag.o dcb.o
+	$(C++) -fPIC -shared \
+		${CFLAGS} \
+		-Wl,-soname,libjvr.so -o libjvr.so \
+		jnifields.o ag.o dx.o dt.o ms.o sr.o jvr.o gc.o dcb.o \
+		${DG_LIB} ${LDFLAGS}
+

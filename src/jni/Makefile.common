@@ -1,0 +1,54 @@
+#
+# Makefile elements that are common to all platforms.
+# Includes setup and some targets.
+#
+
+JVR_JAR = ../../lib/jvr.jar
+# Names of all classes that have JNI elements.
+JNI_CLASSES_1 = net.threebit.jvr.sr net.threebit.jvr.dx net.threebit.jvr.ag net.threebit.jvr.dt 
+JNI_CLASSES_2 = net.threebit.jvr.ms net.threebit.jvr.gc net.threebit.jvr.jvr net.threebit.jvr.DV_DIGIT
+JNI_CLASSES_3 = net.threebit.jvr.DX_IOTT net.threebit.jvr.GC_PARM_BLK 
+JNI_CLASSES_4 = net.threebit.jvr.DX_XPB net.threebit.jvr.dcb
+# Corresponding JNI Headers files for each JNI class
+JNI_HEADERS_1 = net_threebit_jvr_sr.h net_threebit_jvr_dx.h net_threebit_jvr_ag.h net_threebit_jvr_dt.h 
+JNI_HEADERS_2 = net_threebit_jvr_ms.h net_threebit_jvr_gc.h net_threebit_jvr_jvr.h net_threebit_jvr_DV_0005fDIGIT.h
+JNI_HEADERS_3 = net_threebit_jvr_DX_0005fIOTT.h net_threebit_jvr_GC_0005fPARM_0005fBLK.h
+JNI_HEADERS_4 = net_threebit_jvr_DX_0005fXPB.h net_threebit_jvr_dcb.h
+# Collate into single variables
+JNI_CLASSES = ${JNI_CLASSES_1} ${JNI_CLASSES_2} ${JNI_CLASSES_3} ${JNI_CLASSES_4}
+JNI_HEADERS = ${JNI_HEADERS_1} ${JNI_HEADERS_2} ${JNI_HEADERS_3} ${JNI_HEADERS_4}
+
+# Alias for "rebuild all JNI header files"
+head: ${JNI_HEADERS}
+
+# Compile all of the JNI header files
+${JNI_HEADERS}: ${JVR_JAR}
+	${JAVAH} -classpath ${JVR_JAR} -jni ${JNI_CLASSES}
+	touch ${JNI_HEADERS}
+
+# Object code for each library component
+jnifields.h: jnifields.cpp
+	../../bin/jnifields.sh jnifields.cpp jnifields.h
+jnifields.o: jnifields.h jnifields.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} -o jnifields.o jnifields.cpp
+jvr.o: jvr.cpp jvr.h symbolput.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o jvr.o jvr.cpp
+ag.o: ag.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o ag.o ag.cpp
+dx.o: dx.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o dx.o dx.cpp
+dt.o: dt.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o dt.o dt.cpp
+dcb.o: dcb.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o dcb.o dcb.cpp
+ms.o: ms.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o ms.o ms.cpp
+sr.o: sr.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o sr.o sr.cpp
+gc.o: gc.cpp
+	$(C++) -fPIC ${CFLAGS} -c ${JAVA_INC} ${DG_INC} -o gc.o gc.cpp
+
+# Cleans up temporary files.  Great comment eh?  Very helpfull.
+clean:
+	@-rm jnifields.h *.o *.dll *.def *.so 2>/dev/null
+

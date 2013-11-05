@@ -1,0 +1,25 @@
+# Change these if necessary
+DIALOGIC_HOME = /usr/dialogic
+
+# C, FLAGS, INCLUDE and LIBRARY definitions
+C++ = g++
+CFLAGS = -DLINUX
+LDFLAGS = -lLiS -ldl -lpthread
+DG_INC= -I${DIALOGIC_HOME}/inc -I${DIALOGIC_HOME}/sctools
+DG_LIB= -L${DIALOGIC_HOME}/lib -lgc -lec -ldxxx -lsrl
+
+# Target executables
+BINS = dx_open_test wtcallid_test
+
+# Development Deployment
+devrel: ${BINS}
+
+# Programs
+dx_open_test: dx_open_test.cpp
+	$(CC) ${CFLAGS} ${DG_INC} $< ${DG_LIB} ${OBJS} -o $@
+	cp dx_open_test ../../bin
+wtcallid_test: wtcallid_test.cpp
+	$(CC) ${CFLAGS} ${DG_INC} $< ${DG_LIB} ${OBJS} -o $@
+
+clean:
+	@-rm ${BINS} 2>/dev/null

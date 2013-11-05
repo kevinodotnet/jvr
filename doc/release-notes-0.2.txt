@@ -1,0 +1,37 @@
+Quick bug fixing release.
+
+  Global Call
+
+    gc_AttachResource
+    gc_CRN2LineDev
+    gc_Detach
+    gc_GetCallState
+    gc_GetCTInfo
+    gc_GetResourceH
+    gc_GetXmitSlot
+    gc_LoadDxParm
+    gc_SetChanState
+    gc_GetCTInfo removed due to compile issues.  Will be fixed later.
+
+  Documentation
+
+    - Added "required software" section to the documentation.
+    - Added a "readme" that refers the user to the online docs.
+
+  Build Process
+
+    - By default, and now builds the JAR file and all native libs.
+    - New task: "prep" will obtain lib/junit.jar automatically.
+
+  Examples
+
+    - Example1 and Example2 added to JVRConsole.
+
+  Misc
+
+    - Various bugs, typos and paper bag issues.
+
+  Thanks To:
+
+    Andrew Taylor - testing, suggestions, and more testing.
+

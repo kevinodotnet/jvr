@@ -1,0 +1,78 @@
+<html>
+<body>
+Provides the location of the main Java to Dialogic mapping
+classes.  Package members are loosely divided into the
+following categories:
+<p>
+<ul>
+	<li><b>Function Classes</b>: These classes provide
+	static methods that emulate Dialogic API functions.
+	In most cases, the two-letter function prefixes
+	(dx, ms, dt, sr, gc) have been used as the class names.
+	The underscore delimiter (_) is replaced by the 
+	class/member delimiter (.) and the rest of the function 
+	name is used as the method name.
+	<p>
+	Ergo:
+	<table border="1" style='border-collapse: collapse;'>
+		<tr>
+			<th>Dialogic Function Name</th>
+			<th>Class and Static Method Name</th>
+		</tr>
+		<tr>
+			<td>dx_open</td>
+			<td>dx.open</td>
+		</tr>
+		<tr>
+			<td>dx_dial</td>
+			<td>dx.dial</td>
+		</tr>
+		<tr>
+			<td>dt_setevtmsk</td>
+			<td>dt.setevtmsk</td>
+		</tr>
+		<tr>
+			<td>ms_genring</td>
+			<td>ms.genring</td>
+		</tr>
+	</table>
+	<p>
+	</li>
+	<li><b>Type Classes</b>: These classes provide
+	equivalents for the various structures and types
+	used by the Dialogic API.  In most cases they
+	are given the same name (DX_CAP struct is equivalent
+	to the DX_CAP object).
+	<p>
+	The structures have the same meanings and treatments
+	as the Dialogic API types, and can usually be passed
+	as method arguments in the same way as pointers to the
+	types are passed to Dialogic Functions.
+	<p>
+	For example, when dialing on a voice resource, you would
+	provide a pointer to the DX_CAP struct:
+<pre>
+DX_CAP cap;
+cap.ca_nbrdna = 8; // 8 rings before "no answer"
+// Call dx_dial and provide a pointer to the DX_CAP struct
+int ret = dx_dial(chdev, "6135551212", &amp;cap, EV_SYNC);
+</pre>
+	But when using JVR, you provide an instance of a DX_CAP
+	object.
+<pre>
+// Create a new instance
+DX_CAP cap = new DX_CAP();
+// Set a member field.
+cap.ca_nbrdna = 8; // 8 rings before "no answer"
+// Pass the instance object as an argument
+int ret = dx.dial(chdev, "6135551212", cap, EV_SYNC);
+</pre>
+	</li>
+	<li><b>Exception Classes</b>:  JVR supplies a collection
+	of Exception classes to denote various types of errors,
+	beginning with <code>JVRException</code> and extending into
+	various subclasses.
+	</li>
+</ul>
+</body>
+</html>

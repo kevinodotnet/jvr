@@ -1,0 +1,1218 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE book PUBLIC
+	"-//OASIS//DTD DocBook XML V4.1.2//EN"
+	"http://docbook.org/xml/4.1.2/docbookx.dtd"
+	[
+	<!ENTITY relnote-0-1 SYSTEM "release-notes-0.1.txt">
+	<!ENTITY relnote-0-2 SYSTEM "release-notes-0.2.txt">
+	<!ENTITY relnote-0-3 SYSTEM "release-notes-0.3.txt">
+	<!ENTITY relnote-0-4 SYSTEM "release-notes-0.4.txt">
+	<!ENTITY relnote-0-5 SYSTEM "release-notes-0.5.txt">
+	]
+>
+<book>
+
+<bookinfo>
+	<title>JVR Documentation</title>
+	<copyright>
+	 <year>2003</year>
+	 <year>2004</year>
+	 <holder>Kevin O'Donnell</holder>
+	</copyright>
+	<abstract>
+		<para>
+		JVR is an IVR/CT application framework that allows Java applications to
+		control Dialogic telephony hardware.  It provides a JNI bridge between
+		the Dialogic System Release Software and the Java Virtual Machine.
+		</para>
+		<para>
+		This document serves as a programming guide for Java developers.  By 
+		necessity, it also provides some documentation of the Dialogic software API.
+		</para>
+		<para>
+		The official location of this document is:
+		<itemizedlist>
+		<listitem>
+		<simpara><ulink url="http://threebit.net/projects/jvr/current/doc/html">HTML</ulink></simpara>
+		</listitem>
+		<listitem>
+		<simpara><ulink url="http://threebit.net/projects/jvr/current/doc/jvr.pdf">PDF</ulink></simpara>
+		</listitem>
+		</itemizedlist>
+		</para>
+	</abstract>
+</bookinfo>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// chapter //////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<chapter id="introduction"><title>Introduction</title>
+
+<para>
+Before getting into the details of IVR/CT programming, it's probably best to get
+some of the basics out of the way.
+</para>
+
+<qandaset>
+<qandaentry>
+<question>
+<simpara>
+What is JVR trying to accomplish?  What are the goals of the application?
+</simpara>
+</question>
+<answer>
+<para>
+The goal of the JVR project is to map as much of the Dialogic C API into
+Java classes as possible.  In most cases, this mapping is pretty straightforward,
+with minor changes like a <emphasis>(char*)</emphasis> pointer is changed to a 
+<emphasis>java.lang.String</emphasis> object.
+</para>
+<para>
+Sometimes it is not possible to extend the API into Java exactly as Dialogic implemented
+it.  For example, everywhere that Dialogic make suse of <emphasis>unsigned short</emphasis>, the
+Java code needs to use <emphasis>int</emphasis>.  Also, you can't register a Java method as a
+native-context signal handler.  Where these issues exist we tried to keep the solutions consistent.
+If you spot inconsistencies, let us know.  We want JVR to be predictable.
+</para>
+<para>
+JVR sometimes introduces constructs that do not exist in the Dialogic API at all.
+An example would be the event handling system.  Here, JVR makes use of the familiar 
+<emphasis>Event Listener</emphasis> pattern to dispatch Event objects to JVR components.  JVR takes 
+care of calling all of the relevant event information functions in advance.  While this is
+new in the sense that Dialogic does not have a similiar pattern, it is old news to Java
+programming in general.
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<simpara>
+Why does the API look so much like the Dialogic API?
+</simpara>
+</question>
+<answer>
+<para>
+The API looks like the Dialogic API because that's a primary goal of the project:
+extending the API into Java.  While it is possible to simplify the Dialogic API
+and still support the most common programming needs, the resulting JVR API would
+not be as flexible in the long term.
+</para>
+<para>
+Also, by keeping as close as possible to the original API, we negate the need
+for alot of documentation.  For example, consider the function
+<ulink
+url="http://resource.intel.com/telecom/support/releases/unix51/linux51/SR5.1_Linux/Onldoc/html_files/vox_api/1453-02-87.html#P11608_298128">dx_playvox</ulink>:
+<itemizedlist>
+<listitem>
+<simpara>
+The path for the VOX file changes from <emphasis>(char*)</emphasis> to
+<emphasis>java.lang.String</emphasis>.  That is pretty straightforward and consistent.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+The <emphasis>(DV_TPT*)</emphasis> pointer changes to a <emphasis>net.threebit.jvr.DV_TPT[]</emphasis>
+object, but the meaning of each struct member (aka: class member) remain.  Instead of pointing to
+a set of DV_TPT structs (either contiguous or linked-list), developers supply an array of DV_TPT
+objects.  JVR will convert between the two automatically.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+The <emphasis>(DX_XPB*)</emphasis> pointer changes to a <emphasis>net.threebit.jvr.DX_XPB[]</emphasis>
+object, but the meaning of each struct member (aka: class member) remain.  Instead of pointing to
+a set of DX_XPB structs (either contiguous or linked-list), developers supply an array of DX_XPB
+objects.  JVR will convert between the two automatically.
+</simpara>
+</listitem>
+<listitem>
+<simpara>
+The <emphasis>(unsigned short)</emphasis> arguments changes to an <emphasis>int</emphasis> argument,
+but otherwise has exactly the same meaning.
+</simpara>
+</listitem>
+</itemizedlist>
+Since the function/method meanings remain the same, we don't need to document anything 
+(except to give links into the Dialogic API documentation).
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<simpara>
+How much of the Dialogic API will you need to learn?
+</simpara>
+</question>
+<answer>
+<para>
+Only as much as you need to.  If all you want to do is answer incoming calls (on regular,
+analog phone lines) and play the same recorded message to each caller, you'll only need
+<emphasis>dx_wtring()</emphasis>,
+<emphasis>dx_sethook()</emphasis>,
+<emphasis>dx_playvox()</emphasis> and maybe a few other functions.
+</para>
+<para>
+If you want to handle user-input and play back variable content to the user, you'll need
+<emphasis>dx_getdig()</emphasis> and some other functions.
+</para>
+<para>
+You get the idea.  This is another reason why JVR does not impose any <emphasis>ideals</emphasis>
+on how the Dialogic API should be mapped: You are the only qualified person to decide how your
+applications should work.
+</para>
+<para>
+Thankfully, there is alot of sample code available in the JVR Unit Test package 
+(net.threebit.jvr.tests).  You can <ulink
+url="http://threebit.net/projects/jvr/current/doc/doxygen/html/package__net_8threebit_8jvr_8test.html">browse
+them online</ulink> too.
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+<simpara>
+Will you need to know JNI?
+</simpara>
+</question>
+<answer>
+<para>
+No.  Everything is handled internally by JVR.  Of course, if there is a part of the Dialogic 
+API that JVR has not implemented yet, then you will have everything you need to start extending
+the JVR package as you require.
+</para>
+</answer>
+</qandaentry>
+
+</qandaset>
+
+</chapter>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// chapter //////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<chapter id="getting-started"><title>Getting Started</title>
+
+<para>
+This section will get you started with JVR.  One thing though before
+we begin: the online copy of this document is updated continously as
+new development is performed and it may be out-of-sync with the most
+recent release.  If the instructions here seem inconsistent with the
+version you downloaded, it's probably because the source code has been
+changed since then and the documentation is synchronized to the code.
+Just something to keep in mind.
+</para>
+
+<section id="requirements"><title>Requirements</title>
+
+<itemizedlist>
+
+<listitem>
+<para>Dialogic System Release Software.  Windows users will require 
+<ulink url="http://resource.intel.com/telecom/support/releases/winnt/Sr511/index.htm">5.1.1</ulink>
+and
+<ulink url="http://resource.intel.com/telecom/support/releases/winnt/SR511SP1/index.htm">Service Pack 1</ulink>.
+Linux users will require
+<ulink url="http://resource.intel.com/telecom/support/releases/unix51/linux51/index.htm">5.1</ulink>
+and
+<ulink url="http://resource.intel.com/telecom/support/releases/unix51/linux51_sp1/">Service Pack 1</ulink>,
+as well as the 
+<ulink url="http://www.gcom.com/home/linux/lis/download.html">Linux Streams (LIS)</ulink> software.
+Consult the Dialogic installation guides for more details.
+</para>
+</listitem>
+
+<listitem>
+<para>The Dialogic GlobalCall packages must be installed (GlobalCall is included with the
+standard Dialogic software - just be sure to select it during installation).
+JVR uses the GlobalCall event functions 
+internally even if the application does not call any method within the <emphasis>gc</emphasis>
+class.  Windows users should simply choose a <emphasis>complete</emphasis> installation.  Linux
+users should ensure that the <emphasis>GC</emphasis> package is installed.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Optional:</emphasis> To compile JVR, you will require Ant and the
+GNU Compiler Collection.  Since JVR is a Java package, it is assumed you are already
+familiar with <ulink url="http://ant.apache.org/">Ant</ulink>.  Most Linux distributions
+will already include the GNU Compiler Collection (gcc, ld, make, etc).  Windows users
+will need to install the <ulink url="http://www.cygwin.com">Cygwin "Linux-Like" Environment</ulink>
+for Windows.
+</para>
+</listitem>
+
+<listitem>
+<para>
+<emphasis>Notice To Windows Users</emphasis>.  The Win32 binary releases of JVR 
+include binary DLL files from the Cygwin project.  JVR/Threebit provides 
+<ulink url="http://threebit.net/mirror/cygwin/">a mirror</ulink>
+of all of the Cygwin binaries and sources.  While you do not need to download
+any additional files (they are included), we must let you know that the mirror
+exists in order to comply with the GPL.
+</para>
+</listitem>
+
+</itemizedlist>
+</section>
+
+<section id="supported-hardware"><title>Supported Dialogic Cards</title>
+<para>
+JVR should work with any Dialogic card that uses the Dialogic System Release
+Software.  That said, the following cards have been tested with JVR.  If your
+card is not listed please send an email to kevino@threebit.net so I can add
+your card to the list.
+<itemizedlist>
+<listitem><simpara>D-41HS</simpara></listitem>
+<listitem><simpara>D/16SC-LS</simpara></listitem>
+<listitem><simpara>D/240SC-T1</simpara></listitem>
+<listitem><simpara>D/300PCI-E1</simpara></listitem>
+<listitem><simpara>D/41D</simpara></listitem>
+<listitem><simpara>D/41ESC</simpara></listitem>
+<listitem><simpara>D/480SC-2T1</simpara></listitem>
+<listitem><simpara>D/4PCI</simpara></listitem>
+<listitem><simpara>D/600SC-2E1</simpara></listitem>
+<listitem><simpara>MSI/SC80</simpara></listitem>
+</itemizedlist>
+</para>
+</section>
+
+<section id="installation"><title>Installation</title>
+<para>
+This section documents how to install a binary build of JVR
+on Linux or Windows.  See the developer chapter for information
+on how to download and build JVR from source.
+</para>
+<section id="installation-linux"><title>Linux</title>
+<orderedlist>
+<listitem>
+<para>
+Download the most recent Linux version of JVR and save it in <filename>/tmp</filename>.
+This procedure assumes you opt for the <filename>tgz</filename> archive.
+</para>
+<screen>
+cd /tmp
+<emphasis role="bold"># Modify X and Y to reflect appropriate version numbers</emphasis>
+wget http://threebit.net/projects/jvr/download/jvr-X-Y-linux.tgz
+</screen>
+</listitem>
+<listitem>
+<para>
+Extract the TAR file into <filename>/usr/local/jvr</filename>.  If you choose to 
+install JVR into a different directory, that's ok too.  Just make substitutions 
+as required.
+</para>
+<screen>
+cd /usr/local
+tar zxvf /tmp/jvr-X-Y-linux.tgz
+</screen>
+</listitem>
+</orderedlist>
+</section>
+<section id="installation-win32"><title>Windows</title>
+<orderedlist>
+<listitem>
+<para>
+Download the most recent Windows version of JVR and expand the Zip file
+into <filename>c:\program files\jvr</filename>.
+</para>
+</listitem>
+<listitem>
+<para>
+This is the shortest installation procedure ever written.
+</para>
+</listitem>
+</orderedlist>
+</section>
+</section><!-- installation -->
+<section id="postinstalltasks"><title>Post Installation Tasks</title>
+<para>
+<emphasis role="bold">Check Your Installation</emphasis>
+</para>
+<para>
+The first thing you will want to do after installing JVR is check that
+everything from the Dialogic runtime to the JVR runtime is working
+properly.
+</para>
+<para>
+First, run <filename>bin/dx_open_test</filename>.  It should print
+out <emphasis role="bold">OK</emphasis> and exit.  If it prints out
+<emphasis role="bold">FAILED</emphasis> then something is wrong with
+your Dialogic installation.  <filename>dx_open_test</filename> is a
+simple C program that opens a handle to the first Dialogic Voice 
+Resource (dxxxB1C1).  It is an extremely simple test to verify that
+the Dialogic runtime is working and at least one voice card has been
+detected.  If this test fails, then don't even bother trying to get
+JVR to work until you've fixed whatever is wrong.
+</para>
+<para>
+Next we test that JVR can access the Dialogic runtime.  To do so
+we will run an application that does the exact same thing as
+<filename>dx_open_test</filename>, except that it will use Java/JVR
+instead of C.  Invoke the test by running
+<filename>bin/jvr_dx_open_test.bat</filename> (win32) or
+<filename>bin/jvr_dx_open_test.sh</filename> (linux).  Once again,
+<emphasis role="bold">OK</emphasis> is good and an exception is bad.
+<emphasis>You may need to change the <filename>JAVA_HOME</filename> 
+setting.</emphasis>
+</para>
+<para>
+<emphasis role="bold">Examples</emphasis>
+</para>
+<para>
+Now that JVR is installed you'll want to poke around a bit before
+attempting to build your own application.  The easiest way to do
+that is run the JVRConsole and select an example from the drop down 
+menu.  From the main JVR directory, run <filename>bin/jvrconsole.bat</filename> 
+or <filename>bin/jvrconsole.sh</filename> to run the GUI, then select 
+one of the examples from the Example menu.
+The purpose of each example is contained in the Javadoc output for
+each example class.  See 
+<ulink url="http://threebit.net/projects/jvr/current/doc/api/net/threebit/jvr/console/package-summary.html">net.threebit.jvr.console</ulink>.
+</para>
+</section>
+</chapter>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// chapter //////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<chapter id="development-guide"><title>Development and Usage</title>
+<para>
+This section will document how to write applications using JVR, and how to
+use JVR itself (invocation, system parameters, OS issues, etc).
+</para>
+<para>
+Unfortunately, it hasn't been written yet.
+</para>
+</chapter>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// chapter //////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<chapter id="faq"><title>FAQ</title>
+<qandaset>
+
+<qandaentry>
+<question>
+	<simpara>
+Why do I keep getting 
+"dlopen of libicapi.so failed: dlerror=/usr/lib/libicapi.so: undefined symbol: gcdb_InsertLinedev"?
+</simpara>
+</question>
+<answer>
+<para>
+The Dialogic software is having difficulty loading <filename>libgc.so</filename>.  Try 
+running <emphasis>export LD_PRELOAD=/usr/dialogic/lib/libgc.so</emphasis> before launching
+your JVR application.
+</para>
+</answer>
+</qandaentry>
+
+<qandaentry>
+<question>
+	<simpara>
+	When I try to run a JVR application I get a DLL error:
+	<emphasis>
+	java.exe - Unable To Locate DLL.
+	The dynamic link library libgc.dll count not be found in the specified path.
+	</emphasis>
+	</simpara>
+</question>
+<answer>
+<para>
+JVR relies on Global Call, which is optional when you install the Dialogic software.
+Rerun the Dialogic installation program and ensure that <emphasis>Global Call</emphasis>
+is selected if you do a typical installation, or just choose <emphasis>Complete</emphasis>.
+</para>
+</answer>
+</qandaentry>
+
+</qandaset>
+
+<section id="faq-factoids"><title>Miscellaneous Facts</title>
+<screen>
+## Various factoids that I have not integrated into the
+## regular documentation yet.
+% make -f Makefile.win32 jnifields.o
+g++ -fPIC -w -c \
+	-I/cygdrive/c/j2sdk1.4.2_01/include \
+	-I/cygdrive/c/j2sdk1.4.2_01/include/win32 \
+	-o jnifields.o \
+	jnifields.cpp
+In file included from /cygdrive/c/j2sdk1.4.2_01/include/jni.h:27,
+                 from jnifields.cpp:22:
+/cygdrive/c/j2sdk1.4.2_01/include/win32/jni_md.h:16: error: syntax error before
+   `;' token
+
+See http://ptolemy.eecs.berkeley.edu/ptolemyII/ptII3.0/ptII3.0.2/doc/codeDoc/jni/JNIUtilities.html
+
+##
+## When using dx.reciottdata, dx.playiottdata, or any function that
+## takes a DX_XPB parameter, use this to record and playback to 
+## WAV files that work with Windows Media Player, etc.
+##
+final DX_XPB xpb = new DX_XPB();
+xpb.wFileFormat = dx.FILE_FORMAT_WAVE;
+xpb.wDataFormat = dx.DATA_FORMAT_PCM;
+xpb.nSamplesPerSec = dx.DRT_11KHZ;
+xpb.wBitsPerSample = 8;
+</screen>
+</section>
+</chapter>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// appendix /////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<appendix id="release-procedure"><title>Release Procedure</title>
+<para>
+This section documents the procedure that should be followed when making a
+release of JVR.  Skip this section unless you're trying to build a binary
+release and uploaded it to the threebit website.
+</para>
+<orderedlist>
+<listitem>
+<para>
+Make final changes to the release notes and perform a final CVS checkin of all code.
+Start the release-notes for the next release (move the TODO section).
+</para>
+</listitem>
+<listitem>
+<para>
+Create a TAG for this release.  The tag is created at the tip of HEAD (the development
+branch).  Do this on BOA.  Make the tag a branch since we may come back to do 
+maintenance on it.
+<screen>cd ~/code/jvr; cvs rtag -b jvr-0-1 jvr</screen>
+</para>
+</listitem>
+<listitem>
+<para>On a Linux and Win32 machine:</para>
+<para>
+Edit <filename>build.xml</filename> and edit the <emphasis>release.tag</emphasis> property
+to match the name of the tag/branch in the previous step, then run <emphasis role="bold">"ant release"</emphasis>.
+</para>
+<para>
+Copy the TGZ and ZIP files to the JVR website:
+<screen>scp jvr-* kevino@threebit.net:/www/threebit.net/projects/jvr/download</screen>
+</para>
+</listitem>
+<listitem>
+<para>
+On boa, edit the download page to reflect the new release.  Run
+<filename>~/bin/jvr-www-update.sh</filename> to rebuild the documentation, etc.
+</para>
+</listitem>
+<listitem>
+<para>
+Send an email to the mailing list with a copy of the release notes attached.
+</para>
+</listitem>
+</orderedlist>
+</appendix>
+
+<appendix id="release-notes"><title>Release Notes</title>
+<para>This appendix contains the releases notes for each version of JVR. </para>
+<section id="relnotes-0-5"><title>Version 0.5</title><screen>&relnote-0-5;</screen></section>
+<section id="relnotes-0-4"><title>Version 0.4</title><screen>&relnote-0-4;</screen></section>
+<section id="relnotes-0-3"><title>Version 0.3</title><screen>&relnote-0-3;</screen></section>
+<section id="relnotes-0-2"><title>Version 0.2</title><screen>&relnote-0-2;</screen></section>
+<section id="relnotes-0-1"><title>Version 0.1</title><screen>&relnote-0-1;</screen></section>
+</appendix>
+
+<!-- ////////////////////////////////////////////////////////////////////// -->
+<!-- ///// appendix /////////////////////////////////////////////////////// -->
+<!-- ////////////////////////////////////////////////////////////////////// -->
+
+<appendix id="isdiag"><title>Debugging ISDN using ISDIAG and ISDTRACE</title>
+<para>
+If you are reading this, then you are having trouble getting your ISDN configuration
+running.  This section will bring you through using the ISDIAG program to receive
+and place an ISDN call.  It may not work for you as-is, since one of the things about
+ISDN is that each telephone company has slightly different needs - but at least you'll
+have more information than I did the first time I tried to do this.
+</para>
+<para>
+This tutorial assumes that your ISDN protocol is set already (4ESS/5ESS, DMS, etc).
+</para>
+
+<para>
+It's time to run ISDIAG which is located in the Dialogic "bin" directory.  This
+tutorial assumes you are running on Windows - Linux users should adapt filenames 
+as necessary.  Running ISDIAG with no parameters gives you a help message:
+</para>
+<screen>
+Dialogic ISDN Diagnostic Utility
+Copyright(c) 1998 Dialogic Corporation
+Version Package 3 v1.01
+
+USAGE:  isdiag &lt;board&gt; &lt;channel&gt; &lt;boardtype&gt; &lt;type&gt; &lt;voice&gt;
+
+    board =====&gt; board #
+    channel ===&gt; 1-23 for T1
+            ===&gt; 1-30 for E1
+            ===&gt; 1-2  for BRI
+    boardtype =&gt; 't'  = T1
+              =&gt; 'e'  = E1
+              =&gt; 'b'  = BRI
+              =&gt; 'b2' = BRI/2VFD
+    type ======&gt; 'p'  = PEB
+                 's'  = SCBUS
+    trace mode =====&gt; 'r' = Trace mode, No waitcall issued at startup
+                       default: Normal mode, waitcall issued at startup
+    voice =====&gt; 'v' = voice supported(span cards)
+                       default: no voice support(dti cards)
+</screen>
+<para>
+I am using a D/480SC-2T1 card so I will choose the first T1 (board 1) and the first
+timeslot on that T1 (channel 1).  Obviously the board type is T1 and SCBUS.
+</para>
+<blockquote>
+<para>
+<emphasis>Thomas Fejes contributes:</emphasis>
+Regarding the ISDIAG trace mode command line option ('r'): it is used 
+when you want to capture an ISDN trace while another ISDN application is
+running.  For example, you have a commercial Dialogic application running in the
+field that is misbehaving at the ISDN level and neither it nor the telco
+provides any ISDN tracing facility.  Using the 'r' option, you can use
+ISDIAG to 'eavesdrop' at the ISDN level without interfering with the
+commercial app.  Run "isdiag 1 1 t s r" in parallel with the commercial app
+and then choose the normal options to create a trace file.  The key thing
+that the 'r' option does is it avoids interacting with the trunk by not
+issuing a reset or waitcall (which ISDIAG does without the 'r' option).
+Note that since ISDIAG only works on Springware boards (e.g. D/xxxSC,
+D/xxxPCI and D/xxxJCT boards), you cannot use this method with DM3 boards.
+</para>
+</blockquote>
+<para>
+Running ISDIAG with parameters this time we get to the opening menu.  If
+you don't get to this screen then you have probably forgotten to start
+the Dialogic service.
+</para>
+<screen>
+C:\&gt;isdiag 1 1 t s
+-----------------------------------------------------------------------------
+MAIN MENU                                ISDIAG Version Package 3 - Beta 1.00
+                                         LOS  OOF  RAI  AIS  CRC  R/E  DCH
+1.  set call parameters                   0    0    0    0    0    0    0
+2.  request calling party number(ANI)
+3.  send maintenance request
+4.  display information
+5.  drop call                            F1. help menu
+6.  make call
+7.  play/record/dial
+8.  set info
+9.  send message
+10. start/stop/browse trace
+11. restart and waitcall
+12. shell to DOS
+13. change current channel
+14. Hold/Retrieve Call
+15. dpnss supp service
+ESC exit
+  Please enter choice:
+</screen>
+<para>
+Just under "MAIN MENU" you should see nothing.  If you see "RED ALARM" or
+"YELLOW ALARM" then something is wrong with the T1.  Wait two minutes for
+the alarms to clear (patience is key!).  If they don't go away then I 
+recommend you call your telco - they will be able to debug the situation
+from their side better than you can guess about it from your side.
+</para>
+<para>
+In the upper-right you will see various status bits about your D channel
+and the T1 itself.  In a perfect world it should be all zeros:
+</para>
+<screen>
+LOS  OOF  RAI  AIS  CRC  R/E  DCH
+ 0    0    0    0    0    0    0
+</screen>
+<para>
+In the end, if DCH is 1 then your D-channel is down.  If after two minutes
+it has not come up (changed to 0) then call your telco.
+</para>
+<section id="isdiag-menus"><title>Menu Tree</title>
+<para>
+First, let us document each menu option and it's purpose.
+For display purposes the submenus that appear under each menu option
+are displaed 'inline'.  There are several parts of ISDIAG I have never used
+so I haven't bothered documenting them.
+</para>
+<screen>
+MAIN MENU
+
+1.  set call parameters
+
+  1.  change destination number type
+
+    0. Unknown
+    1. International Number
+    2. National Number
+    4. Subscriber Number
+    5. Abbreviated Number
+
+    <emphasis>"National Number" is what you want if you are in the US or Canada
+    and are calling another number in the US or Canada.  If you are from
+    someplace else (or are calling someplace else), please let me know your
+    settings so I can update this document.</emphasis>
+
+  2.  change destination number plan
+
+    0. Unknown
+    1. ISDN/Telephony number plan(Rec. E.164/E.163)
+    2. Telephony number plan(E.163)
+    9. Private number plan
+
+    <emphasis>"ISDN/Telephony" is what you want.</emphasis>
+
+  3.  change facility coding value
+
+    0. Clear coding value
+    01. SDN
+    02. MEGACOM 800
+    03. MEGACOM
+    06. ACCUNET
+    08. I800
+    16. ATT MULTIQUEST
+
+    <emphasis>I am unsure what the Facility Coding Value means, but I
+    can tell you that I had to set it to 0 (Clear Coding Value).
+    Again - if you can offer an explanation let me know so I can update
+    this document.</emphasis>
+
+  4.  change facility feature service
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  5.  change presentation indicator
+
+    0. Presentation allowed
+    1. Presentation restricted
+    2. Number not available due to interworking
+    3. Reserved
+
+    <emphasis>This controls what information the phone network will
+    display to the end user when you make an outgoing call.</emphasis>
+
+  6.  change calling party number
+
+    0. Number is sent en_bloc
+    1. International number
+    2. National number
+
+      0. Unknown
+      1. ISDN/Telephony number plan(Rec. E.164/E.163)
+      2. Telephony number plan(E.163)
+      9. Private number plan
+
+      <emphasis>Again, when calling to/from the US and Canada from within
+      the US/Canada, you specify the calling number as a National Number
+      that uses the ISDN/Telephone number plan.</emphasis>
+
+    4. Subscriber number
+    5. Overlap sending
+
+  7.  do not send calling party number
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  8.  change info. transfer capability
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  9.  change user info. layer 1 protocol
+
+    01.  CCITT standardized rate adaption V.110/X.30
+    02.  Recommendation G.711 Mu-law
+    03.  Recommendation G.711 A-law
+    04.  Recommendation G.721 32kbit/s ADPCM &amp; Recommendation I.460
+    07.  Non-CCITT standardized rate adaption
+    16.  Remove layer 1 protocol field
+
+    <emphasis>My PRI is connected to Quest so I had to change this value
+    to "G.711 Mu-law.</emphasis>
+
+  10. change user rate
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  11. change called party number
+
+    Enter called party number: 
+
+    <emphasis>I am not certain if you have to set this value but 
+    I have been doing it anyway.  Use the full 10 digits.</emphasis>
+
+  12. Disable called party Subaddressing
+  13. Disable calling party Subaddressing
+
+    <emphasis>I'm not certain what Subaddressing is, but I disabled
+    it.  After you disable it these menu options change to say 
+    "Enable ..."</emphasis>
+
+2.  request calling party number(ANI)
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+3.  send maintenance request
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+4.  display information
+
+  1.  Display Called Party Subaddress
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  2.  Display User-User Info.
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+  3.  Display B channel information
+
+    BOARD: 1
+
+    CHAN:     1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
+    STATUS:  00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+
+    CHAN:    17 18 19 20 21 22 23
+    STATUS:  00 00 00 00 00 00 00
+
+    <emphasis>This section will show the status of each B
+    channel in the PRI.  If they are all zeros than you're
+    all good.</emphasis>
+
+  4.  Display D channel information
+
+    <emphasis>Returns you to the main menu.  The D-channel
+    information is in the upper-right hand corner.</emphasis>
+
+5.  drop call
+
+  <emphasis>When you have a connected call (either inbound
+  or outbound, this option hangs up.</emphasis>
+
+6.  make call
+
+  Call: &lt;enter the phone number to call&gt;
+
+  <emphasis>Quest informed me that even if the call is long distance,
+  I don't need to put a "1" before the area code - just put in the
+  10 digit number you are calling.  Your Telco, or ISDN protocol
+  if not using 5ESS, may have different requirements.
+  </emphasis>
+
+7.  play/record/dial
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+8.  set info
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+9.  send message
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+10. start/stop/browse trace
+
+  1. Start Trace
+
+    Please enter the full path name and filename:
+
+    <emphasis>Enter a filename "c:\trace.log" then hit
+    enter.  From this point on the messages that are 
+    received and transmitted on the ISDN D-channel will
+    be recorded in binary form.  The ISDTRACE utility is
+    used afterwards to convert the file to a human-
+    readable format.</emphasis>
+
+  2. Stop Trace
+
+    <emphasis>Stops a running trace.</emphasis>
+
+  3. Browse Trace
+
+    <emphasis>Not used / Not documented.</emphasis>
+
+11. restart and waitcall
+
+  Please enter channel to restart:
+
+  <emphasis>Before using ISDIAG to receive an incoming 
+  call, you have to tell it what channel to expect the
+  call on.  Enter a B-channel number here (1 to 23).
+  </emphasis>
+
+12. shell to DOS
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+13. change current channel
+
+  Change current channel to:
+
+  <emphasis>When making outbound calls, ISDIAG will
+  use whatever channel you specified on the command
+  line until you use this option to select another
+  B channel.  Enter a B-channel number here (1 to 23).
+  </emphasis>
+
+14. Hold/Retrieve Call
+
+  <emphasis>Not used / Not documented.</emphasis>
+
+15. dpnss supp service
+
+  <emphasis>Not used / Not documented.</emphasis>
+</screen>
+</section>
+
+<section id="isdiag-outgoing"><title>Outgoing Call</title>
+
+<para>
+Use this procedure to make an outgoing call with ISDIAG.
+This call was made using a D/480SC-2T1 card connected to
+a Quest PRI running the 5ESS protocol.
+</para>
+
+<screen>
+Restart ISDIAG.
+
+Ensure that your D-channel is still up (DCH=0).
+
+1. Set Call Parameters
+
+  3. Change facility coding value
+    0. 0. Clear coding value
+
+  5. Change presentation indicator
+    0. Presentation allowed
+
+  6.  Change calling party number
+    2. National number
+    1. ISDN/Telephony number plan(Rec. E.164/E.163)
+    <emphasis>Enter the 10-digit number you are calling from.</emphasis>
+
+  9. Change user info. layer 1 protocol
+    2. Recommendation G.711 Mu-law
+
+  11. Change called party number
+    Enter called party number:
+    <emphasis>Enter the 10-digit number you are calling.</emphasis>
+
+  12. Disable called party Subaddressing
+  13. Disable calling party Subaddressing
+
+  Hit ESC to return to the main menu.
+
+10. Start/stop/browse trace
+  1. Start Trace
+    Please enter the full path name and filename: <emphasis role="bold">c:\trace.log</emphasis>
+
+6. Make call
+  Call: <emphasis role="bold">Enter the 10-digit number you are calling.</emphasis>
+
+  When you have hit enter, the status line at the bottom of the
+  screen will be updated with events as the call is placed.
+
+  send SETUP to NETWORK
+    <emphasis>The first step in making a call.</emphasis>
+  received PROCEEDING from FW
+    <emphasis>The SETUP message was accepted and the call
+    is being routed through the phone network.</emphasis>
+  received ALERTING message from NETWORK
+    <emphasis>The remote end is ringing.</emphasis>
+  received CONNECT message from NETWORK
+    <emphasis>The remote end has picked up.</emphasis>
+
+  If your call did not go through, then skip the "Drop Call" step
+  and move right to stopping the trace file.
+
+5. Drop call
+
+  send DEALLOC to FW
+
+10. Start/stop/browse trace
+  2. Stop Trace
+
+EXIT.
+</screen>
+<para>
+Convert the trace file from binary to text format:
+</para>
+<screen>
+C:\>isdtrace trace.log trace.txt
+
+Dialogic ISDN Trace Utility
+Copyright (c) 1997 Dialogic Corporation
+Version 1.00-Alpha-0.10
+BINARY TRACE
+ISDN Protocol: PRI 4ESS/5ESS
+</screen>
+<para>
+And here is the output from the trace file.
+</para>
+<screen>
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0x01 0x9b  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:41.819
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa3  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:41.819
+                                       TRANSMIT
+                                       Command=0    SAPI=0x00
+                                       TEI=0x00
+                                       0x9a 0xa2  Information
+                                       Dest=0   CR=0x0015
+                                       SETUP(0x05)
+                                         1:           BEARER CAPABILITY(0x04)
+                                         2:           IE Length(0x03)
+                                         3:  1------- Extension Bit
+                                             -00----- Coding Standard
+                                             ---00000 Info. Transfer Cap.
+                                         4:  1------- Extension Bit
+                                             -00----- Transfer Mode
+                                             ---10000 Info. Transfer Rate
+                                         5:  1------- Extension Bit
+                                             -01----- Layer 1 Indent
+                                             ---00010 User Info. Layer 1
+                                         1:           CHANNEL ID(0x18)
+                                         2:           IE Length(0x03)
+                                         3:  1------- Extension Bit
+                                             -0------ Interface ID Present
+                                             --1----- Interface Type
+                                             ---0---- Spare
+                                             ----1--- Preferred/Exclusive
+                                             -----0-- D-Channel Indicator
+                                             ------01 Info. Channel Sel.
+                                       3.2:  1------- Extension Bit
+                                             -00----- Coding Standard
+                                             ---0---- Number Map
+                                             ----0011 Channel/Map Element
+                                         4:  1------- Extension Bit
+                                             -0000001 Channel Number/Slot Map
+                                         1:           CALLING PARTY NUM(0x6c)
+                                         2:           IE Length(0x0c)
+                                         3:  0------- Extension Bit
+                                             -010---- Type Of Number
+                                             ----0001 Numbering Plan ID
+                                        3a:  1------- Extension Bit
+                                             -00----- Presentation Indicator
+                                             ---000-- Spare
+                                             ------00 Screening Indicator
+                                             6134564561  Number Digit(s)
+                                         1:           CALLED PARTY NUM(0x70)
+                                         2:           IE Length(0x0b)
+                                         3:  1------- Extension Bit
+                                             -010---- Type of Number
+                                             ----0001 Numbering plan ID
+                                             6138672620  Number Digit(s)
+
+                                       TIME STAMP: 2/28/2004, 21:12:41.867
+RECEIVE
+Response=0    SAPI=0x00
+TEI=0x00
+0x01 0x9c  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:41.867
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0xa2 0x9c  Information
+Orig=1   CR=0x8015
+CALL PROCEEDING(0x02)
+  1:           CHANNEL ID(0x18)
+  2:           IE Length(0x03)
+  3:  1------- Extension Bit
+      -0------ Interface ID Present
+      --1----- Interface Type
+      ---0---- Spare
+      ----1--- Preferred/Exclusive
+      -----0-- D-Channel Indicator
+      ------01 Info. Channel Sel.
+3.2:  1------- Extension Bit
+      -00----- Coding Standard
+      ---0---- Number Map
+      ----0011 Channel/Map Element
+  4:  1------- Extension Bit
+      -0000001 Channel Number/Slot Map
+
+TIME STAMP: 2/28/2004, 21:12:41.883
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa4  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:41.883
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0xa4 0x9c  Information
+Orig=1   CR=0x8015
+ALERTING(0x01)
+  1:           PROGRESS INDICATOR(0x1e)
+  2:           IE Length(0x02)
+  3:  1------- Extension Bit
+      -00----- Coding Standard
+      ---0---- Spare
+      ----0001 Location
+  4:  1------- Extension Bit
+      -0001000 Progress Description
+
+TIME STAMP: 2/28/2004, 21:12:42.803
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa6  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:42.803
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0x01 0x9d  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:44.795
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa7  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:44.795
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0xa6 0x9c  Information
+Orig=1   CR=0x8015
+CALL CONNECT(0x07)
+
+TIME STAMP: 2/28/2004, 21:12:46.723
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa8  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:46.723
+                                       TRANSMIT
+                                       Command=0    SAPI=0x00
+                                       TEI=0x00
+                                       0x9c 0xa8  Information
+                                       Dest=0   CR=0x0015
+                                       CALL CONNECT ACKNOWLEDGE(0x0f)
+
+                                       TIME STAMP: 2/28/2004, 21:12:46.731
+RECEIVE
+Response=0    SAPI=0x00
+TEI=0x00
+0x01 0x9e  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:46.731
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0x01 0x9f  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:48.715
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa9  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:48.715
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0x01 0x9f  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:50.715
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xa9  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:50.715
+                                       TRANSMIT
+                                       Command=0    SAPI=0x00
+                                       TEI=0x00
+                                       0x9e 0xa8  Information
+                                       Dest=0   CR=0x0015
+                                       CALL DISCONNECT(0x45)
+                                         1:           CAUSE(0x08)
+                                         2:           IE Length(0x02)
+                                         3:  1------- Extension Bit
+                                             -00----- Coding Standard
+                                             ---0---- Spare
+                                             ----0000 Location
+                                         4:  1------- Extension Bit
+                                             -0010000 Cause Value
+
+                                       TIME STAMP: 2/28/2004, 21:12:51.435
+RECEIVE
+Response=0    SAPI=0x00
+TEI=0x00
+0x01 0xa0  Receive Ready
+
+TIME STAMP: 2/28/2004, 21:12:51.443
+RECEIVE
+Command=1   SAPI=0x00
+TEI=0x00
+0xa8 0xa0  Information
+Orig=1   CR=0x8015
+RELEASE(0x4d)
+
+TIME STAMP: 2/28/2004, 21:12:51.443
+                                       TRANSMIT
+                                       Response=1   SAPI=0x00
+                                       TEI=0x00
+                                       0x01 0xaa  Receive Ready
+
+                                       TIME STAMP: 2/28/2004, 21:12:51.443
+                                       TRANSMIT
+                                       Command=0    SAPI=0x00
+                                       TEI=0x00
+                                       0xa0 0xaa  Information
+                                       Dest=0   CR=0x0015
+                                       RELEASE COMPLETE(0x5a)
+
+                                       TIME STAMP: 2/28/2004, 21:12:51.451
+RECEIVE
+Response=0    SAPI=0x00
+TEI=0x00
+0x01 0xa2  Receive Ready
+</screen>
+
+<para>Other resources:</para>
+<itemizedlist>
+<listitem><simpara>
+<ulink url="http://resource.intel.com/telecom/support/appnotes/isdn03.htm">1</ulink>
+</simpara></listitem>
+<listitem><simpara>
+<ulink url="http://resource.intel.com/telecom/support/tnotes/tnbyos/winnt/tn332.htm">2</ulink>
+</simpara></listitem>
+<listitem><simpara>
+<ulink url="http://resource.intel.com/telecom/support/tnotes/gentnote/dl_soft/tn197.htm">3</ulink>
+</simpara></listitem>
+<listitem><simpara>
+<ulink url="http://resource.intel.com/telecom/support/tnotes/tnbyos/winnt/tn250.htm">4</ulink>
+</simpara></listitem>
+</itemizedlist>
+
+</section>
+</appendix>
+
+</book>
+
+
+

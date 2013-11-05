@@ -1,0 +1,28 @@
+
+ * Implemented more Voice API functions.
+   dx_deltones(), dx_chgdur(), dx_chgfreq(), dx_chgrepcnt(), dx_initcallp()
+
+ * Added new symbol.
+   TID_BUSY1, TID_BUSY2, TID_DIAL_INTL, TID_DIAL_LCL, TID_DIAL_XTRA,
+   TID_FAX1, TID_FAX2, TID_RNGBK1, TID_DISCONNECT,
+
+ * User I/O functions added to support user supplied input/output stream
+   playback.  dx_setuio() implemented internally.
+
+ * Moved to the LGPL license to allow JVR to be integrated/distributed with
+   non-GPL works.
+
+ * Increased the number of native-context buffers for DX_XPB, DIGBUF
+   GC_PARM_BLK and DX_IOTT structures to 200.
+
+ * Completed Javadoc links to the official Dialogic API.
+
+ * ms.addtoconf() and ms.remfromconf(), ATMS_TSSGBIT(), ms_dsprescount(), 
+   ms_setbrdparm(), ms_setcde()
+
+ * Skeletal support for DCB (Conferencing) functions.
+ 
+ * Additional example code (console package).
+ 
+ * DX_XPB.getWavFormat(File file) added to simplify the creation
+   of a parameter block for wav files.

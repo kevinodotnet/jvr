@@ -1,0 +1,90 @@
+This is the first release of the JVR package.  I had planned to hold
+off on the first release until the GlobaCall support was complete, but
+there has been enough interest in the non-GlobalCall portions to 
+warrant one anyway.
+
+Below is a list of the bindings that have been completed to date.
+See the Javadoc, HTML and/or PDF documentation for full details
+on how to use JVR.
+
+  Device Handling
+    dt_open, dt_close
+    dx_open, dx_close
+    ms_open, ms_close
+
+  SC Bus Routing
+    ag_getxmitslot, ag_listen, ag_unlisten
+    dt_getxmitslot, dt_listen, dt_unlisten
+    dx_getxmitslot, dx_listen, dx_unlisten
+    ms_getxmitslot, ms_listen, ms_unlisten
+
+  SRL Event Management
+    dt_setevtmsk
+    dx_setevtmsk
+    ms_setevtmsk
+
+  Conferencing / MSI Stations
+    ms_delconf
+    ms_estconf
+    ms_genring
+    ms_monconf
+    ms_stopfn
+    ms_unmonconf
+
+  Voice Processing
+    ATDX_CONNTYPE
+    ATDX_CPTERM
+    ATDX_LONGLOW
+    ATDX_SHORTLOW
+    ATDX_SIZEHI
+    ATDX_TERMMSK
+    ATDX_TRCOUNT
+    dx_bldtgen
+    dx_clrdigbuf
+    dx_dial
+    dx_fileopen, dx_fileclose, dx_fileerrno (win32 only)
+    dx_getdig
+    dx_playtone
+    dx_playtoneEx
+    dx_playvox
+    dx_playwav
+    dx_rec
+    dx_recf
+    dx_sethook
+    dx_stopch
+    dx_wtring
+
+  Standard Release Library (SRL)
+    ATDV_ERRMSGP
+    ATDV_LASTERR
+    ATDV_NAMEP
+    sr_getevtdatap
+    sr_getevtdev
+    sr_getevtlen
+    sr_getevttype
+    sr_waitevt
+    sr_waitevtEx
+
+  Global Call
+    gc_CCLibStatusEx
+    gc_DropCall
+    gc_GetCallInfo
+    gc_GetMetaEvent, gc_GetMetaEventEx
+    gc_Listen
+    gc_MakeCall
+    gc_ReleaseCallEx
+    gc_ResetLineDev
+    gc_Start
+    gc_Stop
+    gc_UnListen
+    gc_WaitCall
+    gc_AnswerCall
+
+----- Notes ----------------------------------------------------------
+
+* The Global Call package must be installed.  The event handling
+  routines make use of gc_GetMetaEvent() and gc_GetMetaEventEx().
+  Even if your application will not be using Global Call directly,
+  it must be installed.
+
+

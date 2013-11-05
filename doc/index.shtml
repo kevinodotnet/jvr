@@ -1,0 +1,56 @@
+<head>
+	<title>JVR - Java, IVR, CT, Dialogic Application Development</title>
+	<link rel="stylesheet" href="http://threebit.net/style.css">
+	<link rel="SHORTCUT ICON" HREF="http://threebit.net/logos/threebit-icon.ico">
+	<link rel="ICON" HREF="http://threebit.net/logos/threebit-icon.ico">
+</head>
+
+<body class="tpage">
+<table style="border-bottom: solid 2px #f0f0f0; width: 100%; text-align: left;">
+<tr>
+<td>
+<a href="http://threebit.net/projects/jvr">
+<img src="http://threebit.net/projects/jvr/images/jvr-logo.gif"/>
+</a>
+</td>
+</tr>
+</table>
+
+<center><h1>JVR Documentation</h1></center>
+<center>
+
+<div style='text-align: left; width: 400px;'>
+<ul>
+<li>
+	JVR Manual
+	Covers installing, configuring, troubleshooting and programming
+	the JVR framework.<br>
+	(<a href="http://threebit.net/projects/jvr/current/doc/html">html</a>,
+	<a href="http://threebit.net/projects/jvr/current/doc/jvr.pdf">pdf</a>)
+	<p>
+</li>
+<li>
+	<a href="api">API Documentation</a> (Javadoc).
+	<p>
+</li>
+<li>
+	Browsable <a href="doxygen/html/hierarchy.html">source code</a> (updated daily).
+	<p>
+</li>
+<li>
+	If you need more help, try the
+	<a href="http://threebit.net/projects/jvr/support.shtml">Support</a> pages.
+	<p>
+</li>
+<li>
+	<a href="http://sourceforge.net/projects/commsvcfw">Commsvcfw</a> is a Sourceforge project that implements a lot of
+	Dialogic functionality.  Threebit provides a 
+	<a href="http://threebit.net/projects/jvr/download/CommSvcFw/doxygen/html/files.html">browsable snapshot of their code</a>
+	for reference purposes.
+</li>
+</ul>
+</div>
+</center>
+
+</body>
+</html>

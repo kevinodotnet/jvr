@@ -1,0 +1,28 @@
+<project name="jvr-doc" default="html" basedir=".">
+
+	<property name="java.home" value="/usr/local/java"/>
+	<property name="fop" value="/src/fop-0.20.4"/>
+	<property name="docbook" value="/src/docbook-xsl-1.62.4"/>
+
+	<path id="fop.classpath">
+		<fileset dir="${fop}/lib"><include name="*.jar"/></fileset>
+		<fileset dir="${fop}/build"><include name="*.jar"/></fileset>
+	</path>
+
+	<target name="html">
+		<style in="base.xml" out="html/index.html" style="driver-html.xsl" />
+	</target>
+
+	<target name="fo">
+		<style in="base.xml" out="html/base.fo" style="driver-pdf.xsl" />
+	</target>
+
+	<target name="pdf" depends="fo">
+		<java fork="yes" classname="org.apache.fop.apps.Fop">
+			<!-- <jvmarg value="-DJAVA_HOME=${java.home}"/> -->
+			<arg line="-q -fo html/base.fo -pdf jvr.pdf "/>
+			<classpath refid="fop.classpath"/>
+		</java>
+	</target>
+
+</project>

@@ -1,0 +1,38 @@
+# Change these if necessary
+DIALOGIC_HOME = c:\Program Files\Dialogic
+# We must provide the cygwin compatible path to Java.
+JAVA_HOME = /cygdrive/c/j2sdk1.4.2_06
+
+# Import standard stuff
+include Makefile.common
+
+# C, FLAGS, INCLUDE and LIBRARY definitions
+C++ = g++
+CFLAGS = -w -mno-cygwin
+DG_INC = "-I${DIALOGIC_HOME}\inc"
+DG_LIB = "-L${DIALOGIC_HOME}\lib" -ldxxmt -lsrlmt -lmsir4 -ldtimt -lgc
+JAVAH = ${JAVA_HOME}/bin/javah
+JAVA_INC = -I${JAVA_HOME}/include -I${JAVA_HOME}/include/win32
+
+# Default
+default: ${JNI_HEADERS} jvr.dll
+
+# Development release
+devrel : ${JNI_HEADERS} jvr.dll ..\..\lib\jvr.dll
+
+# Development release
+..\..\lib\jvr.dll: jvr.dll
+	cp jvr.dll ..\..\lib
+
+# Shared library
+jvr.dll: jnifields.o jvr.o dx.o dt.o ms.o sr.o gc.o ag.o dcb.o
+	dllwrap \
+	  --output-def jvr.def \
+	  --add-stdcall-alias \
+	  --driver-name c++ \
+	  -mwindows \
+	  --target=i386-mingw32 \
+	  -o jvr.dll \
+	  ${DG_LIB} \
+	  -s -mno-cygwin \
+	  jnifields.o jvr.o ag.o dx.o dt.o ms.o sr.o gc.o dcb.o

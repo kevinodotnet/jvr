@@ -1,0 +1,27 @@
+Combination of bug fixes, new features and documentation.
+
+  New Dialogic API Mappings
+
+    ATDT_STATUS
+    ATDT_TSSGBIT
+    ATDX_HOOKST
+    dt_settssig
+    dt_settssigsim
+    dt_xmitwink
+    dx_playwav
+    dx_recwav
+
+  Documentation
+
+    net.threebit.jvr.dx Javadocs improved significantly.
+
+  Bugs
+
+    gc_Start() was not being called before event handling started.
+
+  Thanks To:
+
+    Andrew Taylor
+    Kevin W. English
+    Matt Darnell
+

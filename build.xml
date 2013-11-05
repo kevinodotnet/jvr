@@ -1,0 +1,156 @@
+<project name="jvr" default="all" basedir=".">
+
+	<property name="cvsroot" value=":pserver:anonymous@cvs.threebit.net:/cvs/threebit"/>
+	<property name="release.tag" value="jvr-0-4"/>
+	<property name="cygwin.home" value="c:\cygwin"/>
+
+	<property name="junit.url" value="http://optusnet.dl.sourceforge.net/sourceforge/junit/junit3.8.1.zip"/>
+
+	<path id="classpath">
+		<fileset dir="lib"><include name="*.jar"/></fileset>
+	</path>
+
+	<!-- Default target -->
+	<target name="all">
+		<antcall target="jar"/>
+		<antcall target="make"/>
+	</target>
+
+	<target name="clean">
+		<delete dir="build"/>
+		<delete file="lib/jvr.jar"/>
+		<condition property="make-delegate" value="make-clean-win32"><os family="windows"/></condition>
+		<condition property="make-delegate" value="make-clean-linux"><os family="unix"/></condition>
+		<antcall target="${make-delegate}"/>
+	</target>
+	<target name="make-clean-win32">
+		<exec executable="${cygwin.home}\bin\make" dir="src\jni"><arg line="-f Makefile.win32 clean"/></exec>
+		<exec executable="${cygwin.home}\bin\make" dir="src\programs"><arg line="-f Makefile.win32 clean"/></exec>
+	</target>
+	<target name="make-clean-linux">
+		<exec executable="/usr/bin/make" dir="src/jni"><arg line="-f Makefile.linux clean"/></exec>
+		<exec executable="/usr/bin/make" dir="src/programs"><arg line="-f Makefile.linux clean"/></exec>
+	</target>
+
+	<target name="init">
+		<mkdir dir="build"/>
+		<mkdir dir="lib"/>
+	</target>
+
+	<!-- Prepares the build environment -->
+	<target name="prep" depends="init">
+		<!-- Get junit.jar automatically -->
+		<delete file="lib/junit.jar"/>
+		<get src="${junit.url}" dest="lib/junit.zip"/>
+    <unzip src="lib/junit.zip" dest="lib"/>
+		<move file="lib/junit3.8.1/junit.jar" tofile="lib/junit.jar"/>
+		<delete dir="lib/junit3.8.1"/>
+		<delete file="lib/junit.zip"/>
+		<!-- Grab required dlls from c:\cygwin.  This is for kevino only. -->
+		<!-- This will not fail, but will log a warning on linxu builds.  -->
+		<copy file="${cygwin.home}\bin\cygwin1.dll" todir="bin" failonerror="no"/>
+	</target>
+
+	<target name="compile" depends="init">
+		<javac srcdir="src" destdir="build" debug="on">
+			<classpath refid="classpath"/>
+		</javac>
+	</target>
+
+	<target name="jar" depends="compile">
+		<jar jarfile="lib/jvr.jar" basedir="build" includes="net/threebit/jvr/**"/>
+	</target>
+
+	<target name="make">
+		<condition property="make-delegate" value="make-win32"><os family="windows"/></condition>
+		<condition property="make-delegate" value="make-linux"><os family="unix"/></condition>
+		<antcall target="${make-delegate}"/>
+	</target>
+	<target name="make-win32">
+		<exec executable="${cygwin.home}\bin\make" dir="src\jni"><arg line="-f Makefile.win32 devrel"/></exec>
+		<exec executable="${cygwin.home}\bin\make" dir="src\programs"><arg line="-f Makefile.win32 devrel"/></exec>
+	</target>
+	<target name="make-linux">
+		<exec executable="/usr/bin/make" dir="src/jni"><arg line="-f Makefile.linux devrel"/></exec>
+		<exec executable="/usr/bin/make" dir="src/programs"><arg line="-f Makefile.linux devrel"/></exec>
+	</target>
+
+	<target name="javadoc" depends="init">
+		<javadoc
+			access="private"
+			windowtitle="JVR"
+			packagenames="net.threebit.jvr.*"
+			excludepackagenames="net.threebit.jvr.test.*"
+			sourcepath="src"
+			stylesheetfile="doc/javadoc.css"
+			destdir="doc/api">
+			<classpath refid="classpath"/>
+		</javadoc>
+	</target>
+
+	<target name="doxygen">
+  	<mkdir dir="doc/doxygen"/>
+		<exec executable="/usr/local/doxygen/bin/doxygen"><arg line="doc/doxygen.cfg"/></exec>
+	</target>
+
+	<target name="test" depends="jar,make">
+		<condition property="platform" value="win32"><os family="windows"/></condition>
+		<condition property="platform" value="linux"><os family="unix"/></condition>
+		<junit showoutput="yes" fork="yes" printsummary="yes">
+			<!--<sysproperty key="net.threebit.jvr.test.properties" file="unittest.properties"/>-->
+			<sysproperty key="net.threebit.jvr.test.platform" value="${platform}"/>
+			<sysproperty key="net.threebit.jvr.home" value="."/>
+			<sysproperty key="java.library.path" path="lib"/>
+			<classpath refid="classpath"/>
+			<formatter type="plain" usefile="false"/>
+			<batchtest>
+				<fileset dir="src">
+					<include name="**/test/msTests.java"/>
+					<exclude name="**/test/Abstract*"/>
+				</fileset>
+			</batchtest>
+		</junit>
+	</target>
+
+	<target name="console" depends="jar,make">
+		<java classname="net.threebit.jvr.console.JVRConsole" fork="yes">
+			<classpath refid="classpath"/>
+			<jvmarg value="-Djava.library.path=lib"/>
+			<jvmarg value="-Dnet.threebit.jvr.home=."/>
+		</java>
+	</target>
+
+	<target name="release">
+
+		<!-- initialize the release workarea -->
+  	<delete dir="release"/>
+  	<mkdir dir="release"/>
+
+		<!-- for filename tagging -->
+		<condition property="os.tag" value="win32"><os family="windows"/></condition>
+		<condition property="os.tag" value="linux"><os family="unix"/></condition>
+
+		<!-- make sure that the released files always start with "jvr-" -->
+		<condition property="basename" value="jvr-HEAD"><equals arg1="${release.tag}" arg2="HEAD"/></condition>
+		<condition property="basename" value="${release.tag}"><contains string="${release.tag}" substring="jvr-"/></condition>
+
+		<!-- always release directly from CVS to avoid accidental "dirty" files getting into a release. -->
+		<cvspass cvsRoot="${cvsroot}" password="anonymous"/>
+		<cvs cvsRoot="${cvsroot}" command="co -r ${release.tag} jvr" dest="release"/>
+
+		<!-- delegate to the build.xml that came out of CVS -->
+		<ant inheritAll="false" dir="release/jvr" target="prep"/>
+		<ant inheritAll="false" dir="release/jvr" target="jar"/>
+		<ant inheritAll="false" dir="release/jvr" target="make"/>
+		<ant inheritAll="false" dir="release/jvr" target="javadoc"/>
+
+		<!-- archive the release, then clean up -->
+		<delete dir="release/jvr/build"/>
+		<tar destfile="${basename}-${os.tag}.tgz" basedir="release" compression="gzip"/>
+		<zip destfile="${basename}-${os.tag}.zip" basedir="release"/>
+		<delete dir="release"/>
+
+	</target>
+
+</project>
+

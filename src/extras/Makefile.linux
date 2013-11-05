@@ -1,0 +1,29 @@
+#####################################################################
+# Configurable Items
+#####################################################################
+
+DG_HOME = /usr/dialogic
+
+#####################################################################
+# Hopefully you never need to change anything below this line.
+#####################################################################
+
+# Include and Library Directories
+DG_INC = -I${DG_HOME}/inc -I${DG_HOME}/sctools
+DG_LIB = -L${DG_HOME}/lib -lgc -lec -ldxxx -lsrl
+
+# C, Includes, Libraries
+CC = gcc 
+CFLAGS = -w -DLINUX
+
+# Build files.
+BINS = dxdt_event_handling dtmf_state_machine gc_1 conference_error_1 events_1
+
+default: ${BINS}
+
+${BINS}: %: %.c 
+	$(CC) ${CFLAGS} ${DG_INC} $@.c ${DG_LIB} -o $@ 
+
+clean:
+	-rm ${BINS}
+

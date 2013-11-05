@@ -1,0 +1,31 @@
+#####################################################################
+# Configurable Items
+#####################################################################
+
+DG_HOME = /cygdrive/c/Program Files/Dialogic
+
+#####################################################################
+# Hopefully you never need to change anything below this line.
+#####################################################################
+
+# Include and Library Directories
+DG_INC = "-I${DG_HOME}/inc"
+DG_LIB = "-L${DG_HOME}/lib" -ldxxmt -lsrlmt -lmsir4 -ldtimt -lgc
+
+# C, Includes, Libraries
+CC = gcc 
+CFLAGS = -w 
+
+#
+# Build files
+#
+# gc_1.exe
+BINS = dxdt_event_handling.exe dtmf_state_machine.exe conference_error_1.exe events_1.exe gc_1.exe
+
+default: ${BINS}
+
+${BINS}: %.exe: %.c 
+	$(CC) ${CFLAGS} ${DG_INC} $< ${DG_LIB} -o $@
+
+clean:
+	-rm ${BINS}

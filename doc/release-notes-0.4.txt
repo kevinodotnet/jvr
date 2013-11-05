@@ -1,0 +1,41 @@
+
+  Example code for determining available Dialogic hardware.
+  http://threebit.net/pipermail/jvr-general/2004-April/000167.html
+  http://threebit.net/pipermail/jvr-general/2004-January/000022.html
+
+  dx_fileopen and dx_fileclose provided on Linux platforms to enable use
+    of dx.playf/dx.recf functions.
+
+  dx_wtcallid, though I could not get it to return caller ID information
+    on my D/41ESC board.  Could be my hardware though, so we'll assume
+    the function is working ok.
+
+  dx_getparm, dx_setparm and associated symbols.
+
+  dx_open_test native executable.  After installing JVR, run this program
+    to verify that the underlying Dialogic system is functional.  Always
+    make sure that this program reports "OK" before sending in a JVR
+    problem report.
+
+  DxOpenTest JVR class.  Once the Dialogic runtime is confirmed, this
+    JVR based application will do a dx.open test.
+
+  Required Cygwin DLLs are included in the Windows release (in JVR/bin).
+
+  GlobalCall support expanded considerably.
+
+  Critial (show stopper) JNI bugs resolved.
+
+  JVR Event model fixes.
+
+  ISDN via GlobalCall supported and tested.
+
+  T1 via GlobalCall supported and tested.
+
+  T1 via "R4 ISDN" programming model supported and tested.
+
+  GCOutbound and ImmediateCAP (Call Analysis and Progress) utility classes.
+
+  Thanks to Shawn Deleurme for doing the Linux binary build....
+
+
